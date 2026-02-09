@@ -4,9 +4,46 @@
 <meta charset="UTF-8">
 <title>Monitor</title>
 
+<style>
+body{
+  text-align:center;
+  background:white;
+  font-family:Arial;
+}
+.logo{
+  width:150px;
+  margin-top:20px;
+}
+.grid{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:10px;
+}
+.box{
+  width:80px;
+  height:80px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:24px;
+  color:white;
+}
+.azul{background:#0066ff;}
+.naranja{background:orange;}
+</style>
+</head>
+<body>
+
+<img src="logo.png" class="logo">
+
+<h2>Monitor de Turnos</h2>
+
+<div class="grid" id="contenedor"></div>
+
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "TU_APIKEY",
@@ -21,124 +58,35 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-onValue(ref(db,"turnos"),(snapshot)=>{
+onValue(ref(db,"turnos"),snapshot=>{
 
-let usados=[];
-let pendientes=[];
+  const contenedor = document.getElementById("contenedor");
+  contenedor.innerHTML="";
 
-if(snapshot.exists()){
-snapshot.forEach(child=>{
-let data = child.val();
+  let usados=[];
+  let pendientes=[];
 
-if(data.estado=="usado"){
-usados.push(parseInt(data.numero));
-}
+  snapshot.forEach(child=>{
+    if(child.val().estado=="usado"){
+      usados.push(child.val().numero);
+    }else{
+      pendientes.push(child.val().numero);
+    }
+  });
 
-if(data.estado=="pendiente"){
-pendientes.push(parseInt(data.numero));
-}
-});
-}
+  usados.sort((a,b)=>a-b);
+  pendientes.sort((a,b)=>a-b);
 
-// Ordenar
-usados.sort((a,b)=>a-b);
-pendientes.sort((a,b)=>a-b);
+  usados.slice(-10).forEach(n=>{
+    contenedor.innerHTML+=`<div class="box azul">${n}</div>`;
+  });
 
-// Tomar últimos 10 confirmados
-let enTurno = usados.slice(-10);
-
-// Tomar siguientes 10 pendientes
-let siguientes = pendientes.slice(0,10);
-
-// Renderizar cuadros
-mostrarCuadros("enturno", enTurno, "azul");
-mostrarCuadros("siguientes", siguientes, "naranja");
+  pendientes.slice(0,10).forEach(n=>{
+    contenedor.innerHTML+=`<div class="box naranja">${n}</div>`;
+  });
 
 });
-
-function mostrarCuadros(id, lista, color){
-
-let contenedor = document.getElementById(id);
-contenedor.innerHTML="";
-
-for(let i=0;i<10;i++){
-
-let div = document.createElement("div");
-div.classList.add("cuadro");
-
-if(color=="azul") div.classList.add("azul");
-if(color=="naranja") div.classList.add("naranja");
-
-if(lista[i]){
-div.innerText = lista[i];
-}else{
-div.innerText = "-";
-}
-
-contenedor.appendChild(div);
-}
-
-}
 </script>
-
-<style>
-body{
-  background:white;
-  font-family:Arial;
-  text-align:center;
-  margin:0;
-}
-
-.logo{
-  width:180px;
-  margin:20px auto;
-  display:block;
-}
-
-.titulo{
-  font-size:30px;
-  font-weight:bold;
-  margin:30px 0 10px 0;
-}
-
-.contenedor{
-  display:flex;
-  justify-content:center;
-  flex-wrap:wrap;
-  gap:15px;
-  margin-bottom:40px;
-}
-
-.cuadro{
-  width:90px;
-  height:90px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:30px;
-  font-weight:bold;
-  border-radius:12px;
-  color:white;
-}
-
-.azul{
-  background:#007BFF;
-}
-
-.naranja{
-  background:#FF7A00;
-}
-</style>
-</head>
-<body>
-
-<img src="logo.png" class="logo">
-
-<div class="titulo">EN TURNO</div>
-<div id="enturno" class="contenedor"></div>
-
-<div class="titulo">SIGUIENTES</div>
-<div id="siguientes" class="contenedor"></div>
 
 </body>
 </html>
