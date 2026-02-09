@@ -43,15 +43,42 @@ window.asignarTurno = async function(){
 </script>
 
 <style>
-body{font-family:Arial;text-align:center;background:#0a192f;color:white}
-button{padding:15px 30px;font-size:20px;margin-top:20px}
-img{margin-top:20px}
-#numero{font-size:60px;margin-top:20px}
+body{
+  font-family:Arial;
+  text-align:center;
+  background:#0a192f;
+  color:white;
+  margin:0;
+}
+
+.logo{
+  width:180px;
+  margin:20px auto;
+  display:block;
+}
+
+button{
+  padding:15px 30px;
+  font-size:20px;
+  margin-top:20px;
+}
+
+#numero{
+  font-size:70px;
+  margin-top:20px;
+}
+
+img#qr{
+  margin-top:20px;
+}
 </style>
 </head>
 <body>
 
+<img src="logo.png" class="logo">
+
 <h1>Asignar Turno</h1>
+
 <button onclick="asignarTurno()">Generar Turno</button>
 
 <div id="numero"></div>
