@@ -3,50 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <title>Monitor</title>
-<style>
-body{
-  font-family:Arial;
-  background:#0a192f;
-  color:white;
-  text-align:center;
-}
-h2{margin-top:30px;}
-.lista{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-}
-.turno{
-  background:#0077b6;
-  margin:10px;
-  padding:15px 25px;
-  border-radius:10px;
-  font-size:30px;
-}
-.pendiente{background:#f4a261;}
-.transito{background:#e76f51;}
-.confirmado{background:#2a9d8f;}
-</style>
-</head>
-<body>
-
-<h1>Monitor de Turnos</h1>
-
-<h2>Pendientes</h2>
-<div id="pendientes" class="lista"></div>
-
-<h2>En Tránsito</h2>
-<div id="transito" class="lista"></div>
-
-<h2>Confirmados</h2>
-<div id="confirmados" class="lista"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
+  apiKey: "TU_APIKEY",
   authDomain: "turnos-evento.firebaseapp.com",
   databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
   projectId: "turnos-evento",
@@ -58,24 +21,55 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const turnosRef = ref(db,"turnos");
+onValue(ref(db,"turnos"),(snapshot)=>{
 
-onValue(turnosRef,(snapshot)=>{
-  const data = snapshot.val();
-  document.getElementById("pendientes").innerHTML="";
-  document.getElementById("transito").innerHTML="";
-  document.getElementById("confirmados").innerHTML="";
+let pendientes=0;
+let usados=0;
 
-  for(let id in data){
-    const turno = data[id];
-    const div = document.createElement("div");
-    div.className="turno "+turno.estado;
-    div.innerText=turno.numero;
+if(snapshot.exists()){
+snapshot.forEach(child=>{
+if(child.val().estado=="pendiente") pendientes++;
+if(child.val().estado=="usado") usados++;
+});
+}
 
-    document.getElementById(turno.estado+"s")?.appendChild(div);
-  }
+document.getElementById("pendientes").innerHTML=pendientes;
+document.getElementById("usados").innerHTML=usados;
+
 });
 </script>
+
+<style>
+body{
+  background:black;
+  color:white;
+  text-align:center;
+  font-family:Arial;
+  margin:0;
+}
+
+.logo{
+  width:200px;
+  margin:20px auto;
+  display:block;
+}
+
+.numero{
+  font-size:80px;
+}
+</style>
+</head>
+<body>
+
+<img src="logo.png" class="logo">
+
+<h1>MONITOR EN VIVO</h1>
+
+<h2>En tránsito</h2>
+<div id="pendientes" class="numero">0</div>
+
+<h2>Confirmados</h2>
+<div id="usados" class="numero">0</div>
 
 </body>
 </html>
