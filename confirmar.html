@@ -1,89 +1,38 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Confirmar Turno</title>
-
-<script src="https://unpkg.com/html5-qrcode"></script>
-
-<style>
-body {
-  margin: 0;
-  height: 100vh;
-  background: linear-gradient(135deg, #004e75, #0077b6);
-  font-family: 'Segoe UI', sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.card {
-  background: white;
-  width: 400px;
-  padding: 40px;
-  border-radius: 20px;
-  text-align: center;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.logo {
-  width: 120px;
-  margin-bottom: 20px;
-}
-
-h1 {
-  color: #004e75;
-}
-
-#resultado {
-  margin-top: 20px;
-  font-size: 22px;
-  font-weight: bold;
-}
-</style>
 </head>
 <body>
 
-<div class="card">
-  <img src="logo.png" class="logo">
-  <h1>Confirmar Asistencia</h1>
-  <div id="reader" style="width:300px;"></div>
-  <div id="resultado"></div>
-</div>
+<h2>Confirmar Turno</h2>
+<input type="text" id="turnoId" placeholder="Pegar ID del QR">
+<button onclick="confirmar()">Confirmar</button>
 
-<script>
-const html5QrCode = new Html5Qrcode("reader");
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-html5QrCode.start(
-  { facingMode: "environment" },
-  { fps: 10, qrbox: 250 },
-  texto => {
-    let id = parseInt(texto.replace("TURNO:", ""));
-    let turnos = JSON.parse(localStorage.getItem("turnos") || "[]");
-    let turno = turnos.find(t => t.id === id);
+const firebaseConfig = {
+  apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
+  authDomain: "turnos-evento.firebaseapp.com",
+  databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
+  projectId: "turnos-evento",
+  storageBucket: "turnos-evento.firebasestorage.app",
+  messagingSenderId: "108395086341",
+  appId: "1:108395086341:web:db50986497b6deb278126c"
+};
 
-    if (!turno) {
-      resultado.innerText = "Turno inválido ❌";
-      resultado.style.color = "red";
-      return;
-    }
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-    if (turno.estado === "usado") {
-      resultado.innerText = "Turno ya utilizado ❌";
-      resultado.style.color = "red";
-      return;
-    }
-
-    turno.estado = "usado";
-    localStorage.setItem("turnos", JSON.stringify(turnos));
-
-    resultado.innerText = "Acceso permitido ✅";
-    resultado.style.color = "green";
-  }
-);
+window.confirmar = function() {
+  const id = document.getElementById("turnoId").value;
+  const turnoRef = ref(db, "turnos/" + id);
+  update(turnoRef, { estado: "confirmado" });
+  alert("Turno confirmado");
+};
 </script>
 
 </body>

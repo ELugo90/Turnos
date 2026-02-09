@@ -1,96 +1,65 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Monitor de Turnos</title>
 
 <style>
 body {
-  margin: 0;
-  height: 100vh;
-  background: linear-gradient(135deg, #004e75, #0077b6);
-  font-family: 'Segoe UI', sans-serif;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.container {
-  background: white;
-  width: 900px;
-  padding: 50px;
-  border-radius: 25px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+  font-family: Arial;
+  background: #0a192f;
+  color: white;
   text-align: center;
+  padding: 40px;
 }
 
-.logo {
-  width: 150px;
-  margin-bottom: 30px;
-}
-
-.columns {
-  display: flex;
-  justify-content: space-around;
-  margin-top: 30px;
-}
-
-.box {
-  width: 40%;
-}
-
-h2 {
-  color: #004e75;
-  font-size: 28px;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-}
-
-li {
-  font-size: 26px;
-  margin: 10px 0;
-  font-weight: bold;
-  color: #0077b6;
+.turno {
+  font-size: 40px;
+  margin: 10px;
+  padding: 10px;
+  background: #0077b6;
+  border-radius: 10px;
 }
 </style>
 </head>
 <body>
 
-<div class="container">
-  <img src="logo.png" class="logo">
-  <h1>Monitor de Turnos</h1>
+<h1>Turnos Pendientes</h1>
+<div id="listaTurnos"></div>
 
-  <div class="columns">
-    <div class="box">
-      <h2>Asignados</h2>
-      <ul id="asignados"></ul>
-    </div>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-    <div class="box">
-      <h2>En proceso</h2>
-      <ul id="proceso"></ul>
-    </div>
-  </div>
-</div>
+const firebaseConfig = {
+  apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
+  authDomain: "turnos-evento.firebaseapp.com",
+  databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
+  projectId: "turnos-evento",
+  storageBucket: "turnos-evento.firebasestorage.app",
+  messagingSenderId: "108395086341",
+  appId: "1:108395086341:web:db50986497b6deb278126c"
+};
 
-<script>
-function cargarTurnos() {
-  let turnos = JSON.parse(localStorage.getItem("turnos") || "[]");
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-  let asignados = turnos.filter(t => t.estado === "asignado").slice(0,10);
-  let proceso = turnos.filter(t => t.estado === "en_proceso").slice(0,10);
+const turnosRef = ref(db, "turnos");
 
-  document.getElementById("asignados").innerHTML =
-    asignados.map(t => `<li>Turno ${t.id}</li>`).join("");
+onValue(turnosRef, (snapshot) => {
+  const data = snapshot.val();
+  const contenedor = document.getElementById("listaTurnos");
+  contenedor.innerHTML = "";
 
-  document.getElementById("proceso").innerHTML =
-    proceso.map(t => `<li>Turno ${t.id}</li>`).join("");
-}
-
-setInterval(cargarTurnos, 1000);
+  for (let id in data) {
+    if (data[id].estado === "pendiente") {
+      const div = document.createElement("div");
+      div.className = "turno";
+      div.innerText = id.slice(-4);
+      contenedor.appendChild(div);
+    }
+  }
+});
 </script>
 
 </body>

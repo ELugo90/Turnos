@@ -1,96 +1,101 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>Asignar Turno</title>
+  <meta charset="UTF-8">
+  <title>Asignar Turno</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #004e75, #0077b6);
+      font-family: Arial, sans-serif;
+      color: white;
+      text-align: center;
+    }
 
-<style>
-body {
-  margin: 0;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #004e75, #0077b6);
-  font-family: 'Segoe UI', sans-serif;
-}
+    .card {
+      background: white;
+      color: #004e75;
+      padding: 40px;
+      border-radius: 20px;
+      width: 350px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
 
-.card {
-  background: white;
-  width: 380px;
-  padding: 40px;
-  border-radius: 20px;
-  text-align: center;
-  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+    .turno {
+      font-size: 60px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
 
-.logo {
-  width: 120px;
-  margin-bottom: 20px;
-}
+    #qr {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
 
-h1 {
-  color: #004e75;
-  margin-bottom: 10px;
-}
-
-.turno-numero {
-  font-size: 60px;
-  font-weight: bold;
-  color: #0077b6;
-  margin: 20px 0;
-}
-
-#qr {
-  margin-top: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-</style>
+    button {
+      padding: 15px 30px;
+      font-size: 18px;
+      background: #0077b6;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
 <div class="card">
-  <img src="logo.png" class="logo">
-  <h1>Tu turno es</h1>
-  <div id="numero" class="turno-numero"></div>
+  <h2>Obtener Turno</h2>
+  <div class="turno" id="numeroTurno">-</div>
+  <button onclick="crearTurno()">Generar Turno</button>
   <div id="qr"></div>
 </div>
 
-<script>
-let turnos = JSON.parse(localStorage.getItem("turnos") || "[]");
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-if (localStorage.getItem("miTurno")) {
-  let id = localStorage.getItem("miTurno");
-  document.getElementById("numero").innerText = id;
-  new QRCode(document.getElementById("qr"), {
-    text: "TURNO:" + id,
-    width: 200,
-    height: 200
-  });
-} else {
-  let nuevoId = turnos.length + 1;
+  const firebaseConfig = {
+    apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
+    authDomain: "turnos-evento.firebaseapp.com",
+    databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
+    projectId: "turnos-evento",
+    storageBucket: "turnos-evento.firebasestorage.app",
+    messagingSenderId: "108395086341",
+    appId: "1:108395086341:web:db50986497b6deb278126c"
+  };
 
-  let turno = { id: nuevoId, estado: "asignado" };
-  turnos.push(turno);
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
 
-  localStorage.setItem("turnos", JSON.stringify(turnos));
-  localStorage.setItem("miTurno", nuevoId);
+  window.crearTurno = function() {
+    const turnoRef = ref(db, "turnos");
+    const nuevoTurno = push(turnoRef, {
+      estado: "pendiente",
+      timestamp: Date.now()
+    });
 
-  document.getElementById("numero").innerText = nuevoId;
+    const turnoId = nuevoTurno.key;
 
-  new QRCode(document.getElementById("qr"), {
-    text: "TURNO:" + nuevoId,
-    width: 200,
-    height: 200
-  });
-}
+    document.getElementById("numeroTurno").innerText = turnoId.slice(-4);
+
+    document.getElementById("qr").innerHTML = "";
+    new QRCode(document.getElementById("qr"), {
+      text: turnoId,
+      width: 150,
+      height: 150
+    });
+  }
 </script>
 
 </body>
