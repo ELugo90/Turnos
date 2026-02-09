@@ -2,16 +2,95 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Escanear Turno</title>
+<title>Confirmar Turno</title>
 
 <script src="https://unpkg.com/html5-qrcode"></script>
 
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
+  authDomain: "turnos-evento.firebaseapp.com",
+  databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
+  projectId: "turnos-evento",
+  storageBucket: "turnos-evento.firebasestorage.app",
+  messagingSenderId: "108395086341",
+  appId: "1:108395086341:web:db50986497b6deb278126c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const statusDiv = document.getElementById("status");
+
+function beepSuccess(){
+  const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
+  audio.play();
+}
+
+function beepError(){
+  const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+  audio.play();
+}
+
+window.onScanSuccess = async function(decodedText) {
+
+  const turnoRef = ref(db, "turnos/" + decodedText);
+
+  const snapshot = await get(turnoRef);
+
+  if(snapshot.exists()){
+
+    const data = snapshot.val();
+
+    if(data.estado === "usado"){
+      statusDiv.innerHTML = "❌ YA UTILIZADO";
+      statusDiv.style.color = "red";
+      beepError();
+      return;
+    }
+
+    await update(turnoRef, {
+      estado: "usado",
+      horaConfirmado: new Date().toLocaleString()
+    });
+
+    statusDiv.innerHTML = "✅ ACCESO PERMITIDO";
+    statusDiv.style.color = "#00ff00";
+    beepSuccess();
+
+  }else{
+    statusDiv.innerHTML = "❌ TURNO NO EXISTE";
+    statusDiv.style.color = "red";
+    beepError();
+  }
+}
+
+window.onload = function(){
+
+  const html5QrCode = new Html5Qrcode("reader");
+
+  html5QrCode.start(
+    { facingMode: "environment" },
+    {
+      fps: 10,
+      qrbox: { width: 300, height: 300 }
+    },
+    onScanSuccess
+  );
+}
+
+</script>
+
 <style>
 body{
-  font-family: Arial;
-  text-align:center;
   background:#0a192f;
   color:white;
+  text-align:center;
+  font-family:Arial;
   margin:0;
 }
 
@@ -20,43 +99,27 @@ h2{
 }
 
 #reader{
-  width:90%;
+  width:95%;
   max-width:600px;
-  margin:30px auto;
-  border-radius:15px;
-  overflow:hidden;
+  margin:20px auto;
+}
+
+#status{
+  font-size:30px;
+  font-weight:bold;
+  margin-top:20px;
 }
 </style>
+
 </head>
+
 <body>
 
 <h2>Escanea el QR del turno</h2>
 
 <div id="reader"></div>
 
-<script>
-function onScanSuccess(decodedText) {
-  alert("QR detectado: " + decodedText);
-}
-
-function onScanFailure(error) {
-  // Ignorar errores continuos
-}
-
-const html5QrCode = new Html5Qrcode("reader");
-
-html5QrCode.start(
-  { facingMode: "environment" }, // 🔥 fuerza cámara trasera
-  {
-    fps: 10,
-    qrbox: { width: 300, height: 300 }
-  },
-  onScanSuccess,
-  onScanFailure
-).catch(err => {
-  alert("Error al iniciar cámara: " + err);
-});
-</script>
+<div id="status"></div>
 
 </body>
 </html>
