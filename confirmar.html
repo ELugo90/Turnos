@@ -3,16 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <title>Confirmar Turno</title>
-
 <script src="https://unpkg.com/html5-qrcode"></script>
 
-<!-- Firebase -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
+  apiKey: "TU_APIKEY",
   authDomain: "turnos-evento.firebaseapp.com",
   databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
   projectId: "turnos-evento",
@@ -24,65 +22,48 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const statusDiv = document.getElementById("status");
-
-function beepSuccess(){
-  const audio = new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg");
-  audio.play();
-}
-
-function beepError(){
-  const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-  audio.play();
-}
-
-window.onScanSuccess = async function(decodedText) {
-
-  const turnoRef = ref(db, "turnos/" + decodedText);
-
-  const snapshot = await get(turnoRef);
-
-  if(snapshot.exists()){
-
-    const data = snapshot.val();
-
-    if(data.estado === "usado"){
-      statusDiv.innerHTML = "❌ YA UTILIZADO";
-      statusDiv.style.color = "red";
-      beepError();
-      return;
-    }
-
-    await update(turnoRef, {
-      estado: "usado",
-      horaConfirmado: new Date().toLocaleString()
-    });
-
-    statusDiv.innerHTML = "✅ ACCESO PERMITIDO";
-    statusDiv.style.color = "#00ff00";
-    beepSuccess();
-
-  }else{
-    statusDiv.innerHTML = "❌ TURNO NO EXISTE";
-    statusDiv.style.color = "red";
-    beepError();
-  }
-}
-
 window.onload = function(){
 
-  const html5QrCode = new Html5Qrcode("reader");
+const qr = new Html5Qrcode("reader");
 
-  html5QrCode.start(
-    { facingMode: "environment" },
-    {
-      fps: 10,
-      qrbox: { width: 300, height: 300 }
-    },
-    onScanSuccess
-  );
+qr.start(
+{ facingMode:"environment" },
+{ fps:10, qrbox:{width:300,height:300} },
+async (decodedText)=>{
+
+  const snapshot = await get(ref(db,"turnos"));
+
+  if(snapshot.exists()){
+    let encontrado=false;
+
+    snapshot.forEach(child=>{
+      if(child.val().numero == decodedText){
+
+        encontrado=true;
+
+        if(child.val().estado=="usado"){
+          document.getElementById("status").innerHTML="❌ YA UTILIZADO";
+          document.getElementById("status").style.color="red";
+        }else{
+          update(ref(db,"turnos/"+child.key),{
+            estado:"usado",
+            horaConfirmado:new Date().toLocaleString()
+          });
+          document.getElementById("status").innerHTML="✅ ACCESO PERMITIDO";
+          document.getElementById("status").style.color="#00ff00";
+          new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg").play();
+        }
+      }
+    });
+
+    if(!encontrado){
+      document.getElementById("status").innerHTML="❌ TURNO NO EXISTE";
+      document.getElementById("status").style.color="red";
+    }
+  }
+
+});
 }
-
 </script>
 
 <style>
@@ -94,31 +75,31 @@ body{
   margin:0;
 }
 
-h2{
-  margin-top:20px;
+.logo{
+  width:180px;
+  margin:20px auto;
+  display:block;
 }
 
 #reader{
   width:95%;
   max-width:600px;
-  margin:20px auto;
+  margin:auto;
 }
 
 #status{
-  font-size:30px;
-  font-weight:bold;
+  font-size:35px;
   margin-top:20px;
 }
 </style>
-
 </head>
-
 <body>
 
-<h2>Escanea el QR del turno</h2>
+<img src="logo.png" class="logo">
+
+<h2>Escanea el QR</h2>
 
 <div id="reader"></div>
-
 <div id="status"></div>
 
 </body>
