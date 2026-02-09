@@ -23,39 +23,70 @@ const db = getDatabase(app);
 
 onValue(ref(db,"turnos"),(snapshot)=>{
 
-let pendientes=0;
-let usados=0;
+let usados=[];
+let pendientes=[];
 
 if(snapshot.exists()){
+
 snapshot.forEach(child=>{
-if(child.val().estado=="pendiente") pendientes++;
-if(child.val().estado=="usado") usados++;
-});
+let data = child.val();
+
+if(data.estado=="usado"){
+usados.push(parseInt(data.numero));
 }
 
-document.getElementById("pendientes").innerHTML=pendientes;
-document.getElementById("usados").innerHTML=usados;
+if(data.estado=="pendiente"){
+pendientes.push(parseInt(data.numero));
+}
+});
+
+}
+
+// Ordenar números
+usados.sort((a,b)=>a-b);
+pendientes.sort((a,b)=>a-b);
+
+// Últimos 10 ya confirmados (los que están en turno)
+let enTurno = usados.slice(-10);
+
+// Siguientes 10 por confirmar
+let siguientes10 = pendientes.slice(0,10);
+
+document.getElementById("enturno").innerHTML =
+enTurno.length ? enTurno.join(" - ") : "-";
+
+document.getElementById("siguientes").innerHTML =
+siguientes10.length ? siguientes10.join(" - ") : "-";
 
 });
 </script>
 
 <style>
 body{
-  background:black;
-  color:white;
-  text-align:center;
+  background:white;
   font-family:Arial;
+  text-align:center;
   margin:0;
 }
 
 .logo{
-  width:200px;
+  width:180px;
   margin:20px auto;
   display:block;
 }
 
-.numero{
-  font-size:80px;
+.titulo{
+  font-size:32px;
+  margin-top:30px;
+  color:#222;
+  font-weight:bold;
+}
+
+.numeros{
+  font-size:70px;
+  font-weight:bold;
+  margin:40px;
+  color:#000;
 }
 </style>
 </head>
@@ -63,13 +94,11 @@ body{
 
 <img src="logo.png" class="logo">
 
-<h1>MONITOR EN VIVO</h1>
+<div class="titulo">EN TURNO</div>
+<div id="enturno" class="numeros">-</div>
 
-<h2>En tránsito</h2>
-<div id="pendientes" class="numero">0</div>
-
-<h2>Confirmados</h2>
-<div id="usados" class="numero">0</div>
+<div class="titulo">SIGUIENTES 10</div>
+<div id="siguientes" class="numeros">-</div>
 
 </body>
 </html>
