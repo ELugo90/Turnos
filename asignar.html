@@ -3,10 +3,54 @@
 <head>
 <meta charset="UTF-8">
 <title>Asignar Turno</title>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<style>
+body{
+  font-family: Arial;
+  background:white;
+  text-align:center;
+}
+.logo{
+  width:150px;
+  margin-top:20px;
+}
+input{
+  padding:10px;
+  margin:5px;
+  width:250px;
+}
+button{
+  padding:12px 20px;
+  background:#0066ff;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
+#qr{
+  margin-top:20px;
+}
+</style>
+</head>
+<body>
+
+<img src="logo.png" class="logo">
+
+<h2>Asignar Turno</h2>
+
+<input type="text" id="empleado" placeholder="Número de empleado"><br>
+<input type="text" id="nombre" placeholder="Nombre(s)"><br>
+<input type="text" id="apPaterno" placeholder="Apellido Paterno"><br>
+<input type="text" id="apMaterno" placeholder="Apellido Materno"><br>
+
+<button onclick="asignarTurno()">Obtener Turno</button>
+
+<h3 id="datosEmpleado"></h3>
+<canvas id="qr"></canvas>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-import { getDatabase, ref, push, get, child } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "TU_APIKEY",
@@ -23,66 +67,57 @@ const db = getDatabase(app);
 
 window.asignarTurno = async function(){
 
-  const snapshot = await get(child(ref(db), "turnos"));
-  let numero = 1;
+  const empleado = document.getElementById("empleado").value;
+  const nombre = document.getElementById("nombre").value;
+  const apP = document.getElementById("apPaterno").value;
+  const apM = document.getElementById("apMaterno").value;
 
-  if(snapshot.exists()){
-    numero = Object.keys(snapshot.val()).length + 1;
+  if(!empleado || !nombre || !apP){
+    alert("Completa los datos");
+    return;
   }
 
-  await push(ref(db,"turnos"),{
-    numero: numero,
+  const nombreCompleto = nombre+" "+apP+" "+apM;
+
+  const snapshot = await get(ref(db,"turnos"));
+  let nuevoNumero = 1;
+
+  if(snapshot.exists()){
+    nuevoNumero = Object.keys(snapshot.val()).length + 1;
+  }
+
+  const nuevoTurnoRef = push(ref(db,"turnos"));
+
+  await set(nuevoTurnoRef,{
+    numero: nuevoNumero,
+    empleado: empleado,
+    nombre: nombreCompleto,
     estado: "pendiente",
     horaAsignado: new Date().toLocaleString()
   });
 
-  document.getElementById("numero").innerHTML = numero;
-  document.getElementById("qr").src =
-  "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data="+numero;
+  // Enviar a Google Sheets
+  fetch("https://script.google.com/macros/s/AKfycbx_lYwv392dpfuHrKdCR9Lq2t4cS_D1vc6n0xJgq-ACOvbByuH05-soMbLh1LrNeCjyYw/exec",{
+    method:"POST",
+    body: JSON.stringify({
+      turno:nuevoNumero,
+      empleado:empleado,
+      nombre:nombreCompleto,
+      estado:"pendiente",
+      horaAsignado:new Date().toLocaleString(),
+      horaConfirmado:""
+    })
+  });
+
+  document.getElementById("datosEmpleado").innerHTML =
+    "Empleado: "+empleado+"<br>"+nombreCompleto;
+
+  QRCode.toCanvas(document.getElementById("qr"),
+    JSON.stringify({turno:nuevoNumero, empleado:empleado}),
+    {width:250}
+  );
 }
 </script>
-
-<style>
-body{
-  font-family:Arial;
-  text-align:center;
-  background:#0a192f;
-  color:white;
-  margin:0;
-}
-
-.logo{
-  width:180px;
-  margin:20px auto;
-  display:block;
-}
-
-button{
-  padding:15px 30px;
-  font-size:20px;
-  margin-top:20px;
-}
-
-#numero{
-  font-size:70px;
-  margin-top:20px;
-}
-
-img#qr{
-  margin-top:20px;
-}
-</style>
-</head>
-<body>
-
-<img src="logo.png" class="logo">
-
-<h1>Asignar Turno</h1>
-
-<button onclick="asignarTurno()">Generar Turno</button>
-
-<div id="numero"></div>
-<img id="qr"/>
 
 </body>
 </html>
