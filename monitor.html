@@ -8,38 +8,68 @@
 body{
   text-align:center;
   background:white;
-  font-family:Arial;
+  font-family:Arial, sans-serif;
+  margin:0;
+  padding:0;
 }
+
 .logo{
-  width:150px;
+  width:160px;
   margin-top:20px;
 }
+
+.titulo{
+  margin-top:10px;
+  font-size:22px;
+  font-weight:bold;
+}
+
+.fila{
+  margin-top:20px;
+}
+
 .grid{
   display:flex;
-  flex-wrap:wrap;
   justify-content:center;
   gap:10px;
+  flex-wrap:wrap;
+  margin-top:10px;
 }
+
 .box{
-  width:80px;
-  height:80px;
+  width:70px;
+  height:70px;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:24px;
+  font-size:22px;
+  font-weight:bold;
   color:white;
+  border-radius:8px;
 }
-.azul{background:#0066ff;}
-.naranja{background:orange;}
+
+.azul{
+  background:#0066ff;
+}
+
+.naranja{
+  background:orange;
+}
 </style>
 </head>
 <body>
 
 <img src="logo.png" class="logo">
 
-<h2>Monitor de Turnos</h2>
+<div class="fila">
+  <div class="titulo" style="color:#0066ff;">EN TURNO</div>
+  <div class="grid" id="confirmados"></div>
+</div>
 
-<div class="grid" id="contenedor"></div>
+<div class="fila">
+  <div class="titulo" style="color:orange;">PREPÁRATE CASI ES TU TURNO</div>
+  <div class="grid" id="pendientes"></div>
+</div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -58,31 +88,37 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-onValue(ref(db,"turnos"),snapshot=>{
+onValue(ref(db,"turnos"), snapshot => {
 
-  const contenedor = document.getElementById("contenedor");
-  contenedor.innerHTML="";
+  const confirmadosDiv = document.getElementById("confirmados");
+  const pendientesDiv = document.getElementById("pendientes");
 
-  let usados=[];
-  let pendientes=[];
+  confirmadosDiv.innerHTML = "";
+  pendientesDiv.innerHTML = "";
 
-  snapshot.forEach(child=>{
-    if(child.val().estado=="usado"){
-      usados.push(child.val().numero);
-    }else{
-      pendientes.push(child.val().numero);
+  let confirmados = [];
+  let pendientes = [];
+
+  snapshot.forEach(child => {
+    const turno = child.val();
+    if(turno.estado === "usado"){
+      confirmados.push(turno.numero);
+    } else if(turno.estado === "pendiente"){
+      pendientes.push(turno.numero);
     }
   });
 
-  usados.sort((a,b)=>a-b);
+  confirmados.sort((a,b)=>a-b);
   pendientes.sort((a,b)=>a-b);
 
-  usados.slice(-10).forEach(n=>{
-    contenedor.innerHTML+=`<div class="box azul">${n}</div>`;
+  // Últimos 10 confirmados
+  confirmados.slice(-10).forEach(num=>{
+    confirmadosDiv.innerHTML += `<div class="box azul">${num}</div>`;
   });
 
-  pendientes.slice(0,10).forEach(n=>{
-    contenedor.innerHTML+=`<div class="box naranja">${n}</div>`;
+  // Primeros 10 pendientes
+  pendientes.slice(0,10).forEach(num=>{
+    pendientesDiv.innerHTML += `<div class="box naranja">${num}</div>`;
   });
 
 });
