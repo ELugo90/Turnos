@@ -2,8 +2,9 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Prueba Cámara</title>
-<script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+<title>Escanear Turno</title>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body{
@@ -13,42 +14,45 @@ body{
   color:white;
 }
 #reader{
-  width:300px;
-  margin:20px auto;
+  width:350px;
+  margin:30px auto;
 }
 </style>
 </head>
 <body>
 
-<h2>Prueba de Cámara QR</h2>
-<p>Si la cámara funciona, verás la imagen aquí abajo</p>
-
+<h2>Escanea el QR del turno</h2>
 <div id="reader"></div>
 
 <script>
-function iniciarCamara(){
-  const html5QrCode = new Html5Qrcode("reader");
-
-  Html5Qrcode.getCameras().then(devices => {
-    if (devices && devices.length) {
-      html5QrCode.start(
-        devices[0].id,
-        { fps: 10, qrbox: 250 },
-        (decodedText) => {
-          alert("QR detectado: " + decodedText);
-        }
-      );
-    } else {
-      alert("No se detectó cámara");
-    }
-  }).catch(err => {
-    alert("Error al acceder a la cámara: " + err);
-  });
+function onScanSuccess(decodedText) {
+  alert("QR detectado: " + decodedText);
 }
 
-iniciarCamara();
+function onScanFailure(error) {
+  // no hace nada
+}
+
+const html5QrCode = new Html5Qrcode("reader");
+
+Html5Qrcode.getCameras().then(devices => {
+  if (devices && devices.length) {
+    html5QrCode.start(
+      devices[0].id,
+      {
+        fps: 10,
+        qrbox: 250
+      },
+      onScanSuccess,
+      onScanFailure
+    );
+  } else {
+    alert("No se detectó cámara.");
+  }
+}).catch(err => {
+  alert("Error de cámara: " + err);
+});
 </script>
 
 </body>
 </html>
-
