@@ -135,20 +135,22 @@ window.asignarTurno = async function(){
   });
 
   // Enviar a Google Sheets
-  fetch("https://script.google.com/macros/s/AKfycbx_lYwv392dpfuHrKdCR9Lq2t4cS_D1vc6n0xJgq-ACOvbByuH05-soMbLh1LrNeCjyYw/exec",{
-    method:"POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      turno:nuevoNumero,
-      empleado:empleado,
-      nombre:nombreCompleto,
-      estado:"pendiente",
-      horaAsignado:new Date().toLocaleString(),
-      horaConfirmado:""
-    })
-  });
+  fetch("https://script.google.com/macros/s/AKfycbyXOuOC5b1fafV0F9XQMfUlk36yhNHNIs_OpYnPnScXNTudhxkdrC5OQGSiGr6vFxBWYg/exec",{
+  method:"POST",
+  mode:"no-cors",
+  headers:{
+    "Content-Type":"application/json"
+  },
+  body: JSON.stringify({
+    turno:nuevoNumero,
+    empleado:empleado,
+    nombre:nombreCompleto,
+    estado:"pendiente",
+    horaAsignado:new Date().toLocaleString(),
+    horaConfirmado:""
+  })
+});
+
 
   document.getElementById("datosEmpleado").innerHTML =
     "Empleado: "+empleado+
@@ -165,3 +167,4 @@ window.asignarTurno = async function(){
 
 </body>
 </html>
+
