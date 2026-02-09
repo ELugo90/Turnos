@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Asignar Turno</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #004e75, #0077b6);
+  font-family: 'Segoe UI', sans-serif;
+}
+
+.card {
+  background: white;
+  width: 380px;
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo {
+  width: 120px;
+  margin-bottom: 20px;
+}
+
+h1 {
+  color: #004e75;
+  margin-bottom: 10px;
+}
+
+.turno-numero {
+  font-size: 60px;
+  font-weight: bold;
+  color: #0077b6;
+  margin: 20px 0;
+}
+
+#qr {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <img src="logo.png" class="logo">
+  <h1>Tu turno es</h1>
+  <div id="numero" class="turno-numero"></div>
+  <div id="qr"></div>
+</div>
+
+<script>
+let turnos = JSON.parse(localStorage.getItem("turnos") || "[]");
+
+if (localStorage.getItem("miTurno")) {
+  let id = localStorage.getItem("miTurno");
+  document.getElementById("numero").innerText = id;
+  new QRCode(document.getElementById("qr"), {
+    text: "TURNO:" + id,
+    width: 200,
+    height: 200
+  });
+} else {
+  let nuevoId = turnos.length + 1;
+
+  let turno = { id: nuevoId, estado: "asignado" };
+  turnos.push(turno);
+
+  localStorage.setItem("turnos", JSON.stringify(turnos));
+  localStorage.setItem("miTurno", nuevoId);
+
+  document.getElementById("numero").innerText = nuevoId;
+
+  new QRCode(document.getElementById("qr"), {
+    text: "TURNO:" + nuevoId,
+    width: 200,
+    height: 200
+  });
+}
+</script>
+
+</body>
+</html>

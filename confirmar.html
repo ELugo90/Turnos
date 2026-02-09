@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Confirmar Turno</title>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  background: linear-gradient(135deg, #004e75, #0077b6);
+  font-family: 'Segoe UI', sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card {
+  background: white;
+  width: 400px;
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo {
+  width: 120px;
+  margin-bottom: 20px;
+}
+
+h1 {
+  color: #004e75;
+}
+
+#resultado {
+  margin-top: 20px;
+  font-size: 22px;
+  font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <img src="logo.png" class="logo">
+  <h1>Confirmar Asistencia</h1>
+  <div id="reader" style="width:300px;"></div>
+  <div id="resultado"></div>
+</div>
+
+<script>
+const html5QrCode = new Html5Qrcode("reader");
+
+html5QrCode.start(
+  { facingMode: "environment" },
+  { fps: 10, qrbox: 250 },
+  texto => {
+    let id = parseInt(texto.replace("TURNO:", ""));
+    let turnos = JSON.parse(localStorage.getItem("turnos") || "[]");
+    let turno = turnos.find(t => t.id === id);
+
+    if (!turno) {
+      resultado.innerText = "Turno inválido ❌";
+      resultado.style.color = "red";
+      return;
+    }
+
+    if (turno.estado === "usado") {
+      resultado.innerText = "Turno ya utilizado ❌";
+      resultado.style.color = "red";
+      return;
+    }
+
+    turno.estado = "usado";
+    localStorage.setItem("turnos", JSON.stringify(turnos));
+
+    resultado.innerText = "Acceso permitido ✅";
+    resultado.style.color = "green";
+  }
+);
+</script>
+
+</body>
+</html>
