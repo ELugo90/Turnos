@@ -1,3 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asignar Turno</title>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<style>
+body{
+  font-family: Arial, sans-serif;
+  background:white;
+  text-align:center;
+  margin:0;
+}
+
+.logo{
+  width:150px;
+  margin-top:20px;
+}
+
+input{
+  padding:10px;
+  margin:5px;
+  width:250px;
+}
+
+button{
+  padding:12px 20px;
+  background:#0066ff;
+  color:white;
+  border:none;
+  cursor:pointer;
+}
+
+#qr{
+  margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<img src="logo.png" class="logo">
+
+<h2>Asignar Turno</h2>
+
+<input type="text" id="empleado" placeholder="Número de empleado"><br>
+<input type="text" id="nombre" placeholder="Nombre(s)"><br>
+<input type="text" id="apPaterno" placeholder="Apellido Paterno"><br>
+<input type="text" id="apMaterno" placeholder="Apellido Materno"><br>
+
+<button onclick="asignarTurno()">Obtener Turno</button>
+
+<h3 id="datosEmpleado"></h3>
+<canvas id="qr"></canvas>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
+  authDomain: "turnos-evento.firebaseapp.com",
+  databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
+  projectId: "turnos-evento",
+  storageBucket: "turnos-evento.firebasestorage.app",
+  messagingSenderId: "108395086341",
+  appId: "1:108395086341:web:db50986497b6deb278126c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
 window.asignarTurno = async function(){
 
   const empleado = document.getElementById("empleado").value.trim();
@@ -58,7 +134,7 @@ window.asignarTurno = async function(){
     horaAsignado: new Date().toLocaleString()
   });
 
-  // 🔥 Enviar a Google Sheets
+  // Enviar a Google Sheets
   fetch("https://script.google.com/macros/s/AKfycbx_lYwv392dpfuHrKdCR9Lq2t4cS_D1vc6n0xJgq-ACOvbByuH05-soMbLh1LrNeCjyYw/exec",{
     method:"POST",
     headers: {
@@ -84,3 +160,8 @@ window.asignarTurno = async function(){
     {width:250}
   );
 }
+
+</script>
+
+</body>
+</html>
