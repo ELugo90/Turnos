@@ -1,56 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Asignar Turno</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<meta charset="UTF-8">
+<title>Asignar Turno</title>
 
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(135deg, #004e75, #0077b6);
-      font-family: Arial, sans-serif;
-      color: white;
-      text-align: center;
-    }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-    .card {
-      background: white;
-      color: #004e75;
-      padding: 40px;
-      border-radius: 20px;
-      width: 350px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-
-    .turno {
-      font-size: 60px;
-      font-weight: bold;
-      margin: 20px 0;
-    }
-
-    #qr {
-      display: flex;
-      justify-content: center;
-      margin-top: 20px;
-    }
-
-    button {
-      padding: 15px 30px;
-      font-size: 18px;
-      background: #0077b6;
-      border: none;
-      border-radius: 10px;
-      color: white;
-      cursor: pointer;
-    }
-  </style>
+<style>
+body{
+  margin:0;
+  height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  background:linear-gradient(135deg,#004e75,#0077b6);
+  font-family:Arial;
+  color:white;
+}
+.card{
+  background:white;
+  color:#004e75;
+  padding:40px;
+  border-radius:20px;
+  text-align:center;
+  width:350px;
+}
+.turno{
+  font-size:70px;
+  font-weight:bold;
+  margin:20px 0;
+}
+#qr{
+  display:flex;
+  justify-content:center;
+}
+button{
+  padding:15px 30px;
+  font-size:18px;
+  background:#0077b6;
+  border:none;
+  border-radius:10px;
+  color:white;
+  cursor:pointer;
+}
+</style>
 </head>
 <body>
 
@@ -62,40 +55,51 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getDatabase, ref, push, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, get, set, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
-    authDomain: "turnos-evento.firebaseapp.com",
-    databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
-    projectId: "turnos-evento",
-    storageBucket: "turnos-evento.firebasestorage.app",
-    messagingSenderId: "108395086341",
-    appId: "1:108395086341:web:db50986497b6deb278126c"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
+  authDomain: "turnos-evento.firebaseapp.com",
+  databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
+  projectId: "turnos-evento",
+  storageBucket: "turnos-evento.firebasestorage.app",
+  messagingSenderId: "108395086341",
+  appId: "1:108395086341:web:db50986497b6deb278126c"
+};
 
-  const app = initializeApp(firebaseConfig);
-  const db = getDatabase(app);
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
 
-  window.crearTurno = function() {
-    const turnoRef = ref(db, "turnos");
-    const nuevoTurno = push(turnoRef, {
-      estado: "pendiente",
-      timestamp: Date.now()
-    });
+window.crearTurno = async function(){
 
-    const turnoId = nuevoTurno.key;
+  const contadorRef = ref(db,"contador");
+  const snapshot = await get(contadorRef);
 
-    document.getElementById("numeroTurno").innerText = turnoId.slice(-4);
-
-    document.getElementById("qr").innerHTML = "";
-    new QRCode(document.getElementById("qr"), {
-      text: turnoId,
-      width: 150,
-      height: 150
-    });
+  let numero = 1;
+  if(snapshot.exists()){
+    numero = snapshot.val() + 1;
   }
+
+  await set(contadorRef, numero);
+
+  const turnoId = "T"+numero;
+
+  await set(ref(db,"turnos/"+turnoId),{
+    numero: numero,
+    estado: "pendiente",
+    timestamp: Date.now()
+  });
+
+  document.getElementById("numeroTurno").innerText = numero;
+
+  document.getElementById("qr").innerHTML="";
+  new QRCode(document.getElementById("qr"),{
+    text: turnoId,
+    width:150,
+    height:150
+  });
+}
 </script>
 
 </body>
