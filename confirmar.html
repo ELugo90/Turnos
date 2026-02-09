@@ -3,12 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <title>Confirmar Turno</title>
-<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
+
+<style>
+body{
+  font-family:Arial;
+  text-align:center;
+  background:#0a192f;
+  color:white;
+}
+#reader{
+  width:300px;
+  margin:20px auto;
+}
+</style>
 </head>
 <body>
 
 <h2>Escanear QR</h2>
-<div id="reader" style="width:300px;"></div>
+<div id="reader"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -27,13 +40,39 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-function onScanSuccess(decodedText){
-  const turnoRef = ref(db,"turnos/"+decodedText);
-  update(turnoRef,{estado:"confirmado"});
-  alert("Turno confirmado");
+function iniciarCamara(){
+
+  const html5QrCode = new Html5Qrcode("reader");
+
+  Html5Qrcode.getCameras().then(devices => {
+
+    if (devices && devices.length) {
+
+      const cameraId = devices[0].id;
+
+      html5QrCode.start(
+        cameraId,
+        { fps: 10, qrbox: 250 },
+        (decodedText) => {
+          const turnoRef = ref(db,"turnos/"+decodedText);
+          update(turnoRef,{estado:"confirmado"});
+          alert("Turno confirmado: " + decodedText);
+          html5QrCode.stop();
+        }
+      );
+
+    } else {
+      alert("No se detectó cámara");
+    }
+
+  }).catch(err => {
+    console.error(err);
+    alert("Error al acceder a la cámara");
+  });
+
 }
 
-new Html5QrcodeScanner("reader",{fps:10,qrbox:250}).render(onScanSuccess);
+iniciarCamara();
 </script>
 
 </body>
