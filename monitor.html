@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Monitor de Turnos</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #0a192f;
+  color: white;
+  text-align: center;
+  padding: 40px;
+}
+
+.turno {
+  font-size: 40px;
+  margin: 10px;
+  padding: 10px;
+  background: #0077b6;
+  border-radius: 10px;
+}
+</style>
+</head>
+<body>
+
+<h1>Turnos Pendientes</h1>
+<div id="listaTurnos"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
+  authDomain: "turnos-evento.firebaseapp.com",
+  databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
+  projectId: "turnos-evento",
+  storageBucket: "turnos-evento.firebasestorage.app",
+  messagingSenderId: "108395086341",
+  appId: "1:108395086341:web:db50986497b6deb278126c"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const turnosRef = ref(db, "turnos");
+
+onValue(turnosRef, (snapshot) => {
+  const data = snapshot.val();
+  const contenedor = document.getElementById("listaTurnos");
+  contenedor.innerHTML = "";
+
+  for (let id in data) {
+    if (data[id].estado === "pendiente") {
+      const div = document.createElement("div");
+      div.className = "turno";
+      div.innerText = id.slice(-4);
+      contenedor.appendChild(div);
+    }
+  }
+});
+</script>
+
+</body>
+</html>
