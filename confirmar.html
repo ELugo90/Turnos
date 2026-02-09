@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <title>Confirmar Turno</title>
+<script src="https://unpkg.com/html5-qrcode"></script>
 </head>
 <body>
 
-<h2>Confirmar Turno</h2>
-<input type="text" id="turnoId" placeholder="Pegar ID del QR">
-<button onclick="confirmar()">Confirmar</button>
+<h2>Escanear QR</h2>
+<div id="reader" style="width:300px;"></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -27,12 +27,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-window.confirmar = function() {
-  const id = document.getElementById("turnoId").value;
-  const turnoRef = ref(db, "turnos/" + id);
-  update(turnoRef, { estado: "confirmado" });
+function onScanSuccess(decodedText){
+  const turnoRef = ref(db,"turnos/"+decodedText);
+  update(turnoRef,{estado:"confirmado"});
   alert("Turno confirmado");
-};
+}
+
+new Html5QrcodeScanner("reader",{fps:10,qrbox:250}).render(onScanSuccess);
 </script>
 
 </body>
