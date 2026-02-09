@@ -1,45 +1,55 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Confirmar Turno</title>
+
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <style>
 body{
+  font-family: Arial, sans-serif;
   text-align:center;
   background:white;
-  font-family:Arial;
+  margin:0;
 }
+
 .logo{
   width:150px;
   margin-top:20px;
 }
+
 #reader{
   width:400px;
-  margin:auto;
+  margin:20px auto;
 }
-#mensaje{
-  font-size:24px;
+
+.mensaje{
+  font-size:28px;
+  font-weight:bold;
   margin-top:20px;
 }
 </style>
 </head>
+
 <body>
 
 <img src="logo.png" class="logo">
 
-<h2>Confirmar Turno</h2>
+<h2>Escanear Turno</h2>
 
 <div id="reader"></div>
-<div id="mensaje"></div>
+
+<div id="mensaje" class="mensaje"></div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "TU_APIKEY",
+  apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
   authDomain: "turnos-evento.firebaseapp.com",
   databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
   projectId: "turnos-evento",
@@ -51,52 +61,67 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-const qr = new Html5Qrcode("reader");
+const html5QrCode = new Html5Qrcode("reader");
 
-qr.start(
+html5QrCode.start(
   { facingMode: "environment" },
-  { fps:10, qrbox:250 },
-  async (decodedText)=>{
+  { fps: 10, qrbox: 300 },
+  async (decodedText) => {
 
-    const data = JSON.parse(decodedText);
-    const snapshot = await get(ref(db,"turnos"));
+    try{
+      const data = JSON.parse(decodedText);
+      const numeroTurno = data.turno;
 
-    snapshot.forEach(child=>{
-      if(child.val().numero == data.turno){
+      const snapshot = await get(ref(db,"turnos"));
 
-        if(child.val().estado=="usado"){
-          document.getElementById("mensaje").innerHTML="⚠️ YA UTILIZADO";
-          document.getElementById("mensaje").style.color="red";
-          return;
-        }
-
-        update(ref(db,"turnos/"+child.key),{
-          estado:"usado",
-          horaConfirmado:new Date().toLocaleString()
-        });
-
-        // Enviar a Google Sheets
-        fetch("https://script.google.com/macros/s/AKfycbx_lYwv392dpfuHrKdCR9Lq2t4cS_D1vc6n0xJgq-ACOvbByuH05-soMbLh1LrNeCjyYw/exec",{
-          method:"POST",
-          body: JSON.stringify({
-            turno:child.val().numero,
-            empleado:child.val().empleado,
-            nombre:child.val().nombre,
-            estado:"usado",
-            horaAsignado:child.val().horaAsignado,
-            horaConfirmado:new Date().toLocaleString()
-          })
-        });
-
-        document.getElementById("mensaje").innerHTML="✅ ACCESO PERMITIDO";
-        document.getElementById("mensaje").style.color="green";
-
-        new Audio("https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg").play();
+      if(!snapshot.exists()){
+        document.getElementById("mensaje").innerHTML =
+          "<span style='color:red'>Turno no encontrado</span>";
+        return;
       }
-    });
+
+      let turnoKey = null;
+      let turnoData = null;
+
+      snapshot.forEach(child=>{
+        if(child.val().numero == numeroTurno){
+          turnoKey = child.key;
+          turnoData = child.val();
+        }
+      });
+
+      if(!turnoKey){
+        document.getElementById("mensaje").innerHTML =
+          "<span style='color:red'>Turno no válido</span>";
+        return;
+      }
+
+      if(turnoData.estado === "confirmado"){
+        document.getElementById("mensaje").innerHTML =
+          "<span style='color:red'>Turno ya utilizado ❌</span>";
+        return;
+      }
+
+      await update(ref(db,"turnos/"+turnoKey),{
+        estado:"confirmado",
+        horaConfirmado:new Date().toLocaleString()
+      });
+
+      document.getElementById("mensaje").innerHTML =
+        "<span style='color:green'>Acceso permitido ✅</span>";
+
+      // Sonido profesional
+      const beep = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+      beep.play();
+
+    }catch(error){
+      document.getElementById("mensaje").innerHTML =
+        "<span style='color:red'>QR inválido</span>";
+    }
 
   }
 );
+
 </script>
 
 </body>
