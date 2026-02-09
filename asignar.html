@@ -1,76 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Asignar Turno</title>
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-
-<style>
-body{
-  font-family: Arial;
-  background:white;
-  text-align:center;
-}
-.logo{
-  width:150px;
-  margin-top:20px;
-}
-input{
-  padding:10px;
-  margin:5px;
-  width:250px;
-}
-button{
-  padding:12px 20px;
-  background:#0066ff;
-  color:white;
-  border:none;
-  cursor:pointer;
-}
-#qr{
-  margin-top:20px;
-}
-</style>
-</head>
-<body>
-
-<img src="logo.png" class="logo">
-
-<h2>Asignar Turno</h2>
-
-<input type="text" id="empleado" placeholder="Número de empleado"><br>
-<input type="text" id="nombre" placeholder="Nombre(s)"><br>
-<input type="text" id="apPaterno" placeholder="Apellido Paterno"><br>
-<input type="text" id="apMaterno" placeholder="Apellido Materno"><br>
-
-<button onclick="asignarTurno()">Obtener Turno</button>
-
-<h3 id="datosEmpleado"></h3>
-<canvas id="qr"></canvas>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-
-const firebaseConfig = {
-  apiKey: "TU_APIKEY",
-  authDomain: "turnos-evento.firebaseapp.com",
-  databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
-  projectId: "turnos-evento",
-  storageBucket: "turnos-evento.firebasestorage.app",
-  messagingSenderId: "108395086341",
-  appId: "1:108395086341:web:db50986497b6deb278126c"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
 window.asignarTurno = async function(){
 
-  const empleado = document.getElementById("empleado").value;
-  const nombre = document.getElementById("nombre").value;
-  const apP = document.getElementById("apPaterno").value;
-  const apM = document.getElementById("apMaterno").value;
+  const empleado = document.getElementById("empleado").value.trim();
+  const nombre = document.getElementById("nombre").value.trim();
+  const apP = document.getElementById("apPaterno").value.trim();
+  const apM = document.getElementById("apMaterno").value.trim();
 
   if(!empleado || !nombre || !apP){
     alert("Completa los datos");
@@ -80,6 +13,35 @@ window.asignarTurno = async function(){
   const nombreCompleto = nombre+" "+apP+" "+apM;
 
   const snapshot = await get(ref(db,"turnos"));
+
+  let yaExiste = false;
+  let turnoExistente = null;
+
+  if(snapshot.exists()){
+    snapshot.forEach(child=>{
+      if(child.val().empleado === empleado){
+        yaExiste = true;
+        turnoExistente = child.val();
+      }
+    });
+  }
+
+  if(yaExiste){
+    alert("Ya tienes un turno asignado");
+
+    document.getElementById("datosEmpleado").innerHTML =
+      "Empleado: "+turnoExistente.empleado+
+      "<br>"+turnoExistente.nombre+
+      "<br>Turno: "+turnoExistente.numero;
+
+    QRCode.toCanvas(document.getElementById("qr"),
+      JSON.stringify({turno:turnoExistente.numero, empleado:empleado}),
+      {width:250}
+    );
+
+    return;
+  }
+
   let nuevoNumero = 1;
 
   if(snapshot.exists()){
@@ -96,9 +58,12 @@ window.asignarTurno = async function(){
     horaAsignado: new Date().toLocaleString()
   });
 
-  // Enviar a Google Sheets
+  // 🔥 Enviar a Google Sheets
   fetch("https://script.google.com/macros/s/AKfycbx_lYwv392dpfuHrKdCR9Lq2t4cS_D1vc6n0xJgq-ACOvbByuH05-soMbLh1LrNeCjyYw/exec",{
     method:"POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
       turno:nuevoNumero,
       empleado:empleado,
@@ -110,14 +75,12 @@ window.asignarTurno = async function(){
   });
 
   document.getElementById("datosEmpleado").innerHTML =
-    "Empleado: "+empleado+"<br>"+nombreCompleto;
+    "Empleado: "+empleado+
+    "<br>"+nombreCompleto+
+    "<br>Turno: "+nuevoNumero;
 
   QRCode.toCanvas(document.getElementById("qr"),
     JSON.stringify({turno:nuevoNumero, empleado:empleado}),
     {width:250}
   );
 }
-</script>
-
-</body>
-</html>
