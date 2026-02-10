@@ -13,6 +13,7 @@ body{
   text-align:center;
   background:white;
   margin:0;
+  transition: background 0.4s ease;
 }
 
 .logo{
@@ -21,12 +22,12 @@ body{
 }
 
 #reader{
-  width:400px;
+  width:420px;
   margin:20px auto;
 }
 
 .mensaje{
-  font-size:28px;
+  font-size:40px;
   font-weight:bold;
   margin-top:20px;
 }
@@ -40,7 +41,6 @@ body{
 <h2>Escanear Turno</h2>
 
 <div id="reader"></div>
-
 <div id="mensaje" class="mensaje"></div>
 
 <script type="module">
@@ -63,22 +63,41 @@ const db = getDatabase(app);
 
 const html5QrCode = new Html5Qrcode("reader");
 
+function hablar(texto){
+  const voz = new SpeechSynthesisUtterance(texto);
+  voz.lang = "es-MX";
+  voz.rate = 1;
+  voz.pitch = 1;
+  speechSynthesis.speak(voz);
+}
+
+function pantallaVerde(numero){
+  document.body.style.background = "#1b5e20";
+  document.getElementById("mensaje").innerHTML =
+    "ACCESO PERMITIDO<br>Turno " + numero;
+
+  hablar("Turno " + numero + " acceso permitido");
+
+  const beep = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
+  beep.play();
+
+  setTimeout(()=>{
+    document.body.style.background = "white";
+    document.getElementById("mensaje").innerHTML = "";
+  },3000);
+}
+
 html5QrCode.start(
   { facingMode: "environment" },
   { fps: 10, qrbox: 300 },
   async (decodedText) => {
 
     try{
+
       const data = JSON.parse(decodedText);
       const numeroTurno = data.turno;
 
       const snapshot = await get(ref(db,"turnos"));
-
-      if(!snapshot.exists()){
-        document.getElementById("mensaje").innerHTML =
-          "<span style='color:red'>Turno no encontrado</span>";
-        return;
-      }
 
       let turnoKey = null;
       let turnoData = null;
@@ -97,22 +116,23 @@ html5QrCode.start(
       }
 
       if(turnoData.estado === "confirmado"){
+        document.body.style.background = "#b71c1c";
         document.getElementById("mensaje").innerHTML =
-          "<span style='color:red'>Turno ya utilizado ❌</span>";
+          "TURNO YA UTILIZADO ❌";
+        hablar("Turno ya utilizado");
+        setTimeout(()=>{
+          document.body.style.background = "white";
+          document.getElementById("mensaje").innerHTML = "";
+        },3000);
         return;
       }
 
       await update(ref(db,"turnos/"+turnoKey),{
         estado:"confirmado",
-        horaConfirmado:new Date().toLocaleString()
+        fechaConfirmado:new Date().toLocaleString()
       });
 
-      document.getElementById("mensaje").innerHTML =
-        "<span style='color:green'>Acceso permitido ✅</span>";
-
-      // Sonido profesional
-      const beep = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-      beep.play();
+      pantallaVerde(numeroTurno);
 
     }catch(error){
       document.getElementById("mensaje").innerHTML =
