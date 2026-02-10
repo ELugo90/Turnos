@@ -5,41 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Asignar Turno</title>
 
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
 <style>
 body{
-  font-family: Arial;
+  font-family: Arial, sans-serif;
+  background:white;
   text-align:center;
   margin:0;
-  display:flex;
-  flex-direction:column;
-  min-height:100vh;
-  background:white;
 }
 
-.contenido{
-  flex:1;
-}
-
-.logo-top{
+.logo{
   width:150px;
   margin-top:20px;
 }
 
 input{
-  width:90%;
-  max-width:400px;
   padding:10px;
-  margin:8px;
-  font-size:16px;
+  margin:5px;
+  width:250px;
 }
 
 button{
   padding:12px 20px;
-  font-size:16px;
-  background:#1565c0;
+  background:#0066ff;
   color:white;
   border:none;
-  border-radius:5px;
   cursor:pointer;
 }
 
@@ -47,53 +38,47 @@ button{
   margin-top:20px;
 }
 
-footer{
+/* FOOTER */
+.footer{
+  margin-top:40px;
+  padding:20px 0;
   text-align:center;
-  padding:15px 0;
 }
 
-.logo-footer{
-  width:70px;
+.footer img{
+  width:80px;
   display:block;
   margin:0 auto 5px auto;
-  opacity:0.9;
 }
 
-.derechos{
+.footer p{
   font-size:12px;
   color:#555;
+  margin:0;
 }
 </style>
 </head>
 
 <body>
 
-<div class="contenido">
+<img src="logo.png" class="logo">
 
-<img src="logo.png" class="logo-top">
+<h2>Asignar Turno</h2>
 
-<h2>Solicitar Turno</h2>
+<input type="text" id="empleado" placeholder="Número de empleado"><br>
+<input type="text" id="nombre" placeholder="Nombre(s)"><br>
+<input type="text" id="apPaterno" placeholder="Apellido Paterno"><br>
+<input type="text" id="apMaterno" placeholder="Apellido Materno"><br>
 
-<input type="text" id="empleado" placeholder="Número de empleado" required>
-<input type="text" id="nombre" placeholder="Nombre completo" required>
+<button onclick="asignarTurno()">Obtener Turno</button>
 
-<br>
-<button onclick="asignar()">Obtener Turno</button>
-
-<div id="resultado"></div>
-<div id="qr"></div>
-
-</div>
-
-<footer>
-  <img src="Lugo rojo.png" class="logo-footer">
-  <div class="derechos">Derechos reservados.</div>
-</footer>
+<h3 id="datosEmpleado"></h3>
+<canvas id="qr"></canvas>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, push, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getDatabase, ref, push, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
@@ -108,49 +93,100 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-window.asignar = async function(){
+window.asignarTurno = async function(){
 
   const empleado = document.getElementById("empleado").value.trim();
   const nombre = document.getElementById("nombre").value.trim();
+  const apP = document.getElementById("apPaterno").value.trim();
+  const apM = document.getElementById("apMaterno").value.trim();
 
-  if(!empleado || !nombre){
-    alert("Completa todos los campos");
+  if(!empleado || !nombre || !apP){
+    alert("Completa los datos");
     return;
   }
 
+  const nombreCompleto = nombre+" "+apP+" "+apM;
+
   const snapshot = await get(ref(db,"turnos"));
-  let ultimo = 0;
+
+  let yaExiste = false;
+  let turnoExistente = null;
 
   if(snapshot.exists()){
     snapshot.forEach(child=>{
-      if(child.val().numero > ultimo){
-        ultimo = child.val().numero;
+      if(child.val().empleado === empleado){
+        yaExiste = true;
+        turnoExistente = child.val();
       }
     });
   }
 
-  const nuevoTurno = ultimo + 1;
+  if(yaExiste){
+    alert("Ya tienes un turno asignado");
 
-  await push(ref(db,"turnos"),{
-    numero: nuevoTurno,
+    document.getElementById("datosEmpleado").innerHTML =
+      "Empleado: "+turnoExistente.empleado+
+      "<br>"+turnoExistente.nombre+
+      "<br>Turno: "+turnoExistente.numero;
+
+    QRCode.toCanvas(document.getElementById("qr"),
+      JSON.stringify({turno:turnoExistente.numero, empleado:empleado}),
+      {width:250}
+    );
+
+    return;
+  }
+
+  let nuevoNumero = 1;
+
+  if(snapshot.exists()){
+    nuevoNumero = Object.keys(snapshot.val()).length + 1;
+  }
+
+  const nuevoTurnoRef = push(ref(db,"turnos"));
+
+  await set(nuevoTurnoRef,{
+    numero: nuevoNumero,
     empleado: empleado,
-    nombre: nombre,
+    nombre: nombreCompleto,
     estado: "pendiente",
-    fechaAsignado: new Date().toLocaleString(),
-    fechaConfirmado: ""
+    horaAsignado: new Date().toLocaleString()
   });
 
-  document.getElementById("resultado").innerHTML =
-    "<h2>Tu turno es: "+nuevoTurno+"</h2>";
+  fetch("https://script.google.com/macros/s/AKfycbyXOuOC5b1fafV0F9XQMfUlk36yhNHNIs_OpYnPnScXNTudhxkdrC5OQGSiGr6vFxBWYg/exec",{
+  method:"POST",
+  mode:"no-cors",
+  headers:{
+    "Content-Type":"application/json"
+  },
+  body: JSON.stringify({
+    turno:nuevoNumero,
+    empleado:empleado,
+    nombre:nombreCompleto,
+    estado:"pendiente",
+    horaAsignado:new Date().toLocaleString(),
+    horaConfirmado:""
+  })
+});
 
-  const qrData = JSON.stringify({turno:nuevoTurno});
-  const qrURL = "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(qrData);
+  document.getElementById("datosEmpleado").innerHTML =
+    "Empleado: "+empleado+
+    "<br>"+nombreCompleto+
+    "<br>Turno: "+nuevoNumero;
 
-  document.getElementById("qr").innerHTML =
-    "<img src='"+qrURL+"'>";
+  QRCode.toCanvas(document.getElementById("qr"),
+    JSON.stringify({turno:nuevoNumero, empleado:empleado}),
+    {width:250}
+  );
 }
 
 </script>
+
+<!-- FOOTER -->
+<div class="footer">
+  <img src="Lugo rojo.png" alt="Logo Lugo">
+  <p>Derechos reservados.</p>
+</div>
 
 </body>
 </html>
