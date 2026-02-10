@@ -3,61 +3,83 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monitor Turnos</title>
+<title>Monitor</title>
 
 <style>
 body{
-  font-family: Arial;
-  background:white;
-  text-align:center;
+  font-family:Arial;
   margin:0;
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+  background:white;
 }
 
-.logo{
-  width:150px;
-  margin-top:20px;
-}
+.contenido{ flex:1; }
 
-.titulo{
-  font-size:28px;
-  margin-top:20px;
-  font-weight:bold;
-}
+.logo-top{ width:150px; margin-top:20px; }
+
+.titulo{ font-size:24px; font-weight:bold; margin:20px; }
 
 .fila{
   display:flex;
   justify-content:center;
   flex-wrap:wrap;
-  margin:20px;
+  gap:10px;
 }
 
 .cuadro{
-  width:80px;
-  height:80px;
+  width:70px;
+  height:70px;
   display:flex;
-  align-items:center;
   justify-content:center;
-  margin:8px;
-  font-size:22px;
-  font-weight:bold;
+  align-items:center;
   color:white;
+  font-size:20px;
+  font-weight:bold;
   border-radius:10px;
 }
 
-.azul{ background:#1565c0; }
-.naranja{ background:#ef6c00; }
+.azul{ background:#1565c0;}
+.naranja{ background:#ef6c00;}
 
+footer{
+  text-align:center;
+  padding:15px 0;
+}
+
+.logo-footer{
+  width:70px;
+  display:block;
+  margin:0 auto 5px auto;
+}
+
+.derechos{
+  font-size:12px;
+  color:#555;
+}
 </style>
 </head>
+
 <body>
 
-<img src="logo.png" class="logo">
+<div class="contenido">
+
+<img src="logo.png" class="logo-top">
 
 <div class="titulo">EN TURNO</div>
-<div id="enTurno" class="fila"></div>
+<div id="confirmados" class="fila"></div>
 
 <div class="titulo">PREPÁRATE CASI ES TU TURNO</div>
-<div id="preparate" class="fila"></div>
+<div id="pendientes" class="fila"></div>
+
+</div>
+
+<footer>
+  <img src="Lugo rojo.png" class="logo-footer">
+  <div class="derechos">Derechos reservados.</div>
+</footer>
 
 <script type="module">
 
@@ -74,47 +96,24 @@ const firebaseConfig = {
   appId: "1:108395086341:web:db50986497b6deb278126c"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
 
 onValue(ref(db,"turnos"), snapshot=>{
-
   if(!snapshot.exists()) return;
 
-  let turnos = [];
+  let lista=[];
+  snapshot.forEach(child=>lista.push(child.val()));
+  lista.sort((a,b)=>a.numero-b.numero);
 
-  snapshot.forEach(child=>{
-    turnos.push(child.val());
-  });
+  const confirmados=lista.filter(t=>t.estado=="confirmado").slice(-10);
+  const pendientes=lista.filter(t=>t.estado=="pendiente").slice(0,10);
 
-  // ordenar por número
-  turnos.sort((a,b)=> a.numero - b.numero);
+  document.getElementById("confirmados").innerHTML=
+    confirmados.map(t=>`<div class="cuadro azul">${t.numero}</div>`).join("");
 
-  let confirmados = turnos.filter(t=> t.estado === "confirmado");
-  let pendientes = turnos.filter(t=> t.estado === "pendiente");
-
-  // 🔵 últimos 10 confirmados
-  let enTurno = confirmados.slice(-10);
-
-  // 🟠 primeros 10 pendientes
-  let preparate = pendientes.slice(0,10);
-
-  const divEnTurno = document.getElementById("enTurno");
-  const divPreparate = document.getElementById("preparate");
-
-  divEnTurno.innerHTML="";
-  divPreparate.innerHTML="";
-
-  enTurno.forEach(t=>{
-    divEnTurno.innerHTML +=
-      `<div class="cuadro azul">${t.numero}</div>`;
-  });
-
-  preparate.forEach(t=>{
-    divPreparate.innerHTML +=
-      `<div class="cuadro naranja">${t.numero}</div>`;
-  });
-
+  document.getElementById("pendientes").innerHTML=
+    pendientes.map(t=>`<div class="cuadro naranja">${t.numero}</div>`).join("");
 });
 
 </script>
