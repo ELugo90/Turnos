@@ -13,7 +13,6 @@ body{
   text-align:center;
   background:white;
   margin:0;
-  transition: background 0.4s ease;
 }
 
 .logo{
@@ -26,10 +25,21 @@ body{
   margin:20px auto;
 }
 
-.mensaje{
-  font-size:40px;
+.overlay{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:48px;
   font-weight:bold;
-  margin-top:20px;
+  color:white;
+  text-align:center;
+  z-index:999;
+  display:none;
 }
 </style>
 </head>
@@ -37,11 +47,11 @@ body{
 <body>
 
 <img src="logo.png" class="logo">
-
 <h2>Escanear Turno</h2>
 
 <div id="reader"></div>
-<div id="mensaje" class="mensaje"></div>
+
+<div id="overlay" class="overlay"></div>
 
 <script type="module">
 
@@ -62,85 +72,90 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 const html5QrCode = new Html5Qrcode("reader");
+let escaneando = false;
 
-function hablar(texto){
+function hablarUnaVez(texto){
+  speechSynthesis.cancel();
   const voz = new SpeechSynthesisUtterance(texto);
   voz.lang = "es-MX";
   voz.rate = 1;
-  voz.pitch = 1;
   speechSynthesis.speak(voz);
 }
 
-function pantallaVerde(numero){
-  document.body.style.background = "#1b5e20";
-  document.getElementById("mensaje").innerHTML =
-    "ACCESO PERMITIDO<br>Turno " + numero;
+function mostrarOverlay(color, mensaje, vozTexto){
+  const overlay = document.getElementById("overlay");
+  overlay.style.background = color;
+  overlay.innerHTML = mensaje;
+  overlay.style.display = "flex";
 
-  hablar("Turno " + numero + " acceso permitido");
-
-  const beep = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-  beep.play();
+  if(vozTexto){
+    hablarUnaVez(vozTexto);
+  }
 
   setTimeout(()=>{
-    document.body.style.background = "white";
-    document.getElementById("mensaje").innerHTML = "";
-  },3000);
+    overlay.style.display = "none";
+    iniciarEscaner();
+  },5000);
 }
 
-html5QrCode.start(
-  { facingMode: "environment" },
-  { fps: 10, qrbox: 300 },
-  async (decodedText) => {
+async function iniciarEscaner(){
+  escaneando = true;
 
-    try{
+  await html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 300 },
+    async (decodedText) => {
 
-      const data = JSON.parse(decodedText);
-      const numeroTurno = data.turno;
+      if(!escaneando) return;
 
-      const snapshot = await get(ref(db,"turnos"));
+      escaneando = false;
+      await html5QrCode.stop();
 
-      let turnoKey = null;
-      let turnoData = null;
+      try{
+        const data = JSON.parse(decodedText);
+        const numeroTurno = data.turno;
 
-      snapshot.forEach(child=>{
-        if(child.val().numero == numeroTurno){
-          turnoKey = child.key;
-          turnoData = child.val();
+        const snapshot = await get(ref(db,"turnos"));
+        let turnoKey = null;
+        let turnoData = null;
+
+        snapshot.forEach(child=>{
+          if(child.val().numero == numeroTurno){
+            turnoKey = child.key;
+            turnoData = child.val();
+          }
+        });
+
+        if(!turnoKey){
+          mostrarOverlay("#b71c1c","TURNO NO VÁLIDO ❌","Turno no válido");
+          return;
         }
-      });
 
-      if(!turnoKey){
-        document.getElementById("mensaje").innerHTML =
-          "<span style='color:red'>Turno no válido</span>";
-        return;
+        if(turnoData.estado === "confirmado"){
+          mostrarOverlay("#b71c1c","TURNO YA UTILIZADO ❌","Turno ya utilizado");
+          return;
+        }
+
+        await update(ref(db,"turnos/"+turnoKey),{
+          estado:"confirmado",
+          fechaConfirmado:new Date().toLocaleString()
+        });
+
+        mostrarOverlay(
+          "#1b5e20",
+          "ACCESO PERMITIDO ✅<br>Turno "+numeroTurno,
+          "Turno "+numeroTurno+" acceso permitido"
+        );
+
+      }catch(error){
+        mostrarOverlay("#b71c1c","QR INVÁLIDO ❌","Código inválido");
       }
 
-      if(turnoData.estado === "confirmado"){
-        document.body.style.background = "#b71c1c";
-        document.getElementById("mensaje").innerHTML =
-          "TURNO YA UTILIZADO ❌";
-        hablar("Turno ya utilizado");
-        setTimeout(()=>{
-          document.body.style.background = "white";
-          document.getElementById("mensaje").innerHTML = "";
-        },3000);
-        return;
-      }
-
-      await update(ref(db,"turnos/"+turnoKey),{
-        estado:"confirmado",
-        fechaConfirmado:new Date().toLocaleString()
-      });
-
-      pantallaVerde(numeroTurno);
-
-    }catch(error){
-      document.getElementById("mensaje").innerHTML =
-        "<span style='color:red'>QR inválido</span>";
     }
+  );
+}
 
-  }
-);
+iniciarEscaner();
 
 </script>
 
