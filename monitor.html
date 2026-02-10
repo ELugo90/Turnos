@@ -1,82 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Monitor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor Turnos</title>
 
 <style>
 body{
-  text-align:center;
+  font-family: Arial;
   background:white;
-  font-family:Arial, sans-serif;
+  text-align:center;
   margin:0;
-  padding:0;
 }
 
 .logo{
-  width:160px;
+  width:150px;
   margin-top:20px;
 }
 
 .titulo{
-  margin-top:10px;
-  font-size:22px;
+  font-size:28px;
+  margin-top:20px;
   font-weight:bold;
 }
 
 .fila{
-  margin-top:20px;
-}
-
-.grid{
   display:flex;
   justify-content:center;
-  gap:10px;
   flex-wrap:wrap;
-  margin-top:10px;
+  margin:20px;
 }
 
-.box{
-  width:70px;
-  height:70px;
+.cuadro{
+  width:80px;
+  height:80px;
   display:flex;
   align-items:center;
   justify-content:center;
+  margin:8px;
   font-size:22px;
   font-weight:bold;
   color:white;
-  border-radius:8px;
+  border-radius:10px;
 }
 
-.azul{
-  background:#0066ff;
-}
+.azul{ background:#1565c0; }
+.naranja{ background:#ef6c00; }
 
-.naranja{
-  background:orange;
-}
 </style>
 </head>
 <body>
 
 <img src="logo.png" class="logo">
 
-<div class="fila">
-  <div class="titulo" style="color:#0066ff;">EN TURNO</div>
-  <div class="grid" id="confirmados"></div>
-</div>
+<div class="titulo">EN TURNO</div>
+<div id="enTurno" class="fila"></div>
 
-<div class="fila">
-  <div class="titulo" style="color:orange;">PREPÁRATE CASI ES TU TURNO</div>
-  <div class="grid" id="pendientes"></div>
-</div>
+<div class="titulo">PREPÁRATE CASI ES TU TURNO</div>
+<div id="preparate" class="fila"></div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "TU_APIKEY",
+  apiKey: "AIzaSyAOmMmesMJ1rpP5gZnJt0w3ZuXK9VmKd9w",
   authDomain: "turnos-evento.firebaseapp.com",
   databaseURL: "https://turnos-evento-default-rtdb.firebaseio.com",
   projectId: "turnos-evento",
@@ -88,40 +77,46 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-onValue(ref(db,"turnos"), snapshot => {
+onValue(ref(db,"turnos"), snapshot=>{
 
-  const confirmadosDiv = document.getElementById("confirmados");
-  const pendientesDiv = document.getElementById("pendientes");
+  if(!snapshot.exists()) return;
 
-  confirmadosDiv.innerHTML = "";
-  pendientesDiv.innerHTML = "";
+  let turnos = [];
 
-  let confirmados = [];
-  let pendientes = [];
-
-  snapshot.forEach(child => {
-    const turno = child.val();
-    if(turno.estado === "usado"){
-      confirmados.push(turno.numero);
-    } else if(turno.estado === "pendiente"){
-      pendientes.push(turno.numero);
-    }
+  snapshot.forEach(child=>{
+    turnos.push(child.val());
   });
 
-  confirmados.sort((a,b)=>a-b);
-  pendientes.sort((a,b)=>a-b);
+  // ordenar por número
+  turnos.sort((a,b)=> a.numero - b.numero);
 
-  // Últimos 10 confirmados
-  confirmados.slice(-10).forEach(num=>{
-    confirmadosDiv.innerHTML += `<div class="box azul">${num}</div>`;
+  let confirmados = turnos.filter(t=> t.estado === "confirmado");
+  let pendientes = turnos.filter(t=> t.estado === "pendiente");
+
+  // 🔵 últimos 10 confirmados
+  let enTurno = confirmados.slice(-10);
+
+  // 🟠 primeros 10 pendientes
+  let preparate = pendientes.slice(0,10);
+
+  const divEnTurno = document.getElementById("enTurno");
+  const divPreparate = document.getElementById("preparate");
+
+  divEnTurno.innerHTML="";
+  divPreparate.innerHTML="";
+
+  enTurno.forEach(t=>{
+    divEnTurno.innerHTML +=
+      `<div class="cuadro azul">${t.numero}</div>`;
   });
 
-  // Primeros 10 pendientes
-  pendientes.slice(0,10).forEach(num=>{
-    pendientesDiv.innerHTML += `<div class="box naranja">${num}</div>`;
+  preparate.forEach(t=>{
+    divPreparate.innerHTML +=
+      `<div class="cuadro naranja">${t.numero}</div>`;
   });
 
 });
+
 </script>
 
 </body>
